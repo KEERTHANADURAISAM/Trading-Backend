@@ -244,6 +244,9 @@ ${registration.notes ? `Notes: ${registration.notes}` : ''}
 // @desc    View file (stream for preview)
 // @route   GET /api/files/view/:registrationId/:fileType
 // @access  Private/Admin
+// @desc    View file (stream for preview)
+// @route   GET /api/files/view/:registrationId/:fileType
+// @access  Private/Admin
 const viewFile = async (req, res) => {
   try {
     const { registrationId, fileType } = req.params;
@@ -279,7 +282,7 @@ const viewFile = async (req, res) => {
       });
     }
 
-    // Map file type to actual folder name
+    // Map file type to actual folder name (signatures is plural!)
     const folderName = fileType === "aadhar" ? "aadhar" : "signatures";
 
     // Build URL dynamically
@@ -310,7 +313,6 @@ const viewFile = async (req, res) => {
     });
   }
 };
-
 // @desc    Get file information
 // @route   GET /api/files/info/:registrationId/:fileType
 // @access  Private/Admin
