@@ -248,7 +248,7 @@ const viewFile = async (req, res) => {
   try {
     const { registrationId, fileType } = req.params;
 
-    console.log(` View file request - Registration: ${registrationId}, File: ${fileType}`);
+    console.log(`👁️ View file request - Registration: ${registrationId}, File: ${fileType}`);
 
     // Validate file type
     const allowedFileTypes = ['aadhar', 'signature'];
@@ -279,9 +279,12 @@ const viewFile = async (req, res) => {
       });
     }
 
+    // Map file type to actual folder name
+    const folderName = fileType === "aadhar" ? "aadhar" : "signatures";
+
     // Build URL dynamically
     const backendUrl = `${req.protocol}://${req.get("host")}`;
-    const fileUrl = `${backendUrl}/uploads/${fileType}/${fileInfo.filename}`;
+    const fileUrl = `${backendUrl}/uploads/${folderName}/${fileInfo.filename}`;
 
     console.log(`✅ File URL generated: ${fileUrl}`);
 
