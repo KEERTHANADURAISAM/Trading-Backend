@@ -48,26 +48,11 @@ app.use('/api/', limiter);
 
 // CORS Configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? function (origin, callback) {
-        const allowedOrigins = [
-          'https://your-production-domain.com',
-          process.env.CLIENT_URL
-        ].filter(Boolean);
-        
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      }
-    : '*', // Development-ல எல்லாம் allow
+  origin: true, // Allow all
   credentials: true,
-  optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}; 
-
+};
 app.use(cors(corsOptions));
 
 // Body Parser Middleware
