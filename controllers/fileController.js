@@ -247,15 +247,15 @@ ${registration.notes ? `Notes: ${registration.notes}` : ''}
 const viewFile = async (req, res) => {
   try {
     const { registrationId, fileType } = req.params;
-    
-    console.log(`👁️ View file request - Registration: ${registrationId}, File: ${fileType}`);
+
+    console.log(` View file request - Registration: ${registrationId}, File: ${fileType}`);
 
     // Validate file type
     const allowedFileTypes = ['aadhar', 'signature'];
     if (!allowedFileTypes.includes(fileType)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid file type. Must be "aadhar" or "signature"'
+        message: 'Invalid file type. Must be "aadhar" or "signature"',
       });
     }
 
@@ -264,78 +264,47 @@ const viewFile = async (req, res) => {
     if (!registration) {
       return res.status(404).json({
         success: false,
-        message: 'Registration not found'
+        message: "Registration not found",
       });
     }
 
     // Get file info
-    const fileField = fileType === 'aadhar' ? 'aadharFile' : 'signatureFile';
+    const fileField = fileType === "aadhar" ? "aadharFile" : "signatureFile";
     const fileInfo = registration.files[fileField];
-    
-    if (!fileInfo || !fileInfo.path) {
+
+    if (!fileInfo || !fileInfo.filename) {
       return res.status(404).json({
         success: false,
-        message: `${fileType} file not found`
+        message: `${fileType} file not found`,
       });
     }
 
-    const filePath = path.resolve(fileInfo.path);
-    
-    // Check if file exists on filesystem
-    if (!await fs.pathExists(filePath)) {
-      console.error(`❌ File not found on filesystem: ${filePath}`);
-      return res.status(404).json({
-        success: false,
-        message: 'File not found on server'
-      });
-    }
+    // Build URL dynamically
+    const backendUrl = `${req.protocol}://${req.get("host")}`;
+    const fileUrl = `${backendUrl}/uploads/${fileType}/${fileInfo.filename}`;
 
-    // Get file stats
-    const stats = await fs.stat(filePath);
-    
-    // Set appropriate headers for inline viewing
-    res.set({
-      'Content-Type': fileInfo.mimeType || 'application/octet-stream',
-      'Content-Length': stats.size,
-      'Content-Disposition': `inline; filename="${fileInfo.originalName}"`,
-      'Cache-Control': 'private, max-age=3600', // Cache for 1 hour
-      'X-Content-Type-Options': 'nosniff'
+    console.log(`✅ File URL generated: ${fileUrl}`);
+
+    return res.status(200).json({
+      success: true,
+      fileType,
+      fileUrl,
     });
-
-    console.log(`✅ Streaming file for view: ${fileInfo.originalName} (${stats.size} bytes)`);
-
-    // Create read stream and pipe to response
-    const readStream = fs.createReadStream(filePath);
-    
-    readStream.on('error', (error) => {
-      console.error('❌ File streaming error:', error);
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: 'Error reading file'
-        });
-      }
-    });
-
-    readStream.pipe(res);
-
   } catch (error) {
-    console.error('❌ View file error:', error);
+    console.error("❌ View file error:", error);
 
-    if (error.name === 'CastError') {
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid registration ID format'
+        message: "Invalid registration ID format",
       });
     }
 
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: 'File viewing failed',
-        ...(process.env.NODE_ENV === 'development' && { error: error.message })
-      });
-    }
+    return res.status(500).json({
+      success: false,
+      message: "File URL generation failed",
+      ...(process.env.NODE_ENV === "development" && { error: error.message }),
+    });
   }
 };
 
