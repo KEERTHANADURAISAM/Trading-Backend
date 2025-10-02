@@ -48,11 +48,38 @@ app.use('/api/', limiter);
 
 // CORS Configuration
 const corsOptions = {
-  origin: true, // Allow all
+  origin: function (origin, callback) {
+    // Allow requests with no origin (Postman, mobile apps)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:5000',
+      process.env.CLIENT_URL
+    ].filter(Boolean);
+
+    // Log for debugging
+    console.log('🔍 CORS Check - Origin:', origin);
+    console.log('✅ Allowed origins:', allowedOrigins);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // Log but allow anyway (for testing)
+      console.log('⚠️ Origin not in whitelist, but allowing:', origin);
+      callback(null, true); // Change this line to allow all for now
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
+
+app.use(cors(corsOptions));
 app.use(cors(corsOptions));
 
 // Body Parser Middleware
