@@ -490,6 +490,103 @@ const updateRegistrationStatus = async (req, res) => {
   }
 };
 
+// @desc    Update registration details
+// @route   PUT /api/registration/:id
+// @access  Private/Admin
+const updateRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, phone, courseName, status } = req.body;
+    
+    console.log(`📝 Updating registration: ${id}`);
+
+    const registration = await Registration.findById(id);
+    
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        message: 'Registration not found'
+      });
+    }
+
+    // Check for duplicate email (if changed)
+    if (email && email !== registration.email) {
+      const existingEmail = await Registration.findByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'This email address is already registered',
+          field: 'email'
+        });
+      }
+    }
+
+    // Check for duplicate phone (if changed)
+    if (phone && phone !== registration.phone) {
+      const existingPhone = await Registration.findByPhone(phone);
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'This phone number is already registered',
+          field: 'phone'
+        });
+      }
+    }
+
+    // Update fields
+    if (firstName) registration.firstName = firstName.trim();
+    if (lastName) registration.lastName = lastName.trim();
+    if (email) registration.email = email.toLowerCase().trim();
+    if (phone) registration.phone = phone.replace(/\D/g, '');
+    if (courseName) registration.courseName = courseName.trim();
+    if (status) registration.status = status;
+
+    const updatedRegistration = await registration.save();
+
+    console.log('✅ Registration updated successfully');
+
+    res.json({
+      success: true,
+      message: 'Registration updated successfully',
+      data: {
+        id: updatedRegistration._id,
+        firstName: updatedRegistration.firstName,
+        lastName: updatedRegistration.lastName,
+        email: updatedRegistration.email,
+        phone: updatedRegistration.phone,
+        courseName: updatedRegistration.courseName,
+        status: updatedRegistration.status,
+        fullName: updatedRegistration.fullName
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating registration:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid registration ID format'
+      });
+    }
+
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `${field} is already in use`,
+        field: field
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update registration',
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
+    });
+  }
+};
+
 // @desc    Delete registration
 // @route   DELETE /api/registration/:id
 // @access  Private/Admin
@@ -625,6 +722,7 @@ module.exports = {
   getAllRegistrations,
   getRegistrationById,
   updateRegistrationStatus,
+  updateRegistration,
   deleteRegistration,
   getRegistrationStats
 };

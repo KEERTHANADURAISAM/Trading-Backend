@@ -7,6 +7,7 @@ const {
   getAllRegistrations,
   getRegistrationById,
   updateRegistrationStatus,
+  updateRegistration,
   deleteRegistration,
   getRegistrationStats
 } = require('../controllers/registrationController');
@@ -66,6 +67,19 @@ router.put(
   statusUpdateValidation,
   updateRegistrationStatus
 );
+
+// @desc    Update registration details
+// @route   PUT /api/registration/:id
+// @access  Private/Admin
+router.put(
+  '/:id',
+  validateObjectId,
+  sanitizeInput,
+  updateRegistration
+);
+
+
+
 
 // @desc    Delete registration
 // @route   DELETE /api/registration/:id
