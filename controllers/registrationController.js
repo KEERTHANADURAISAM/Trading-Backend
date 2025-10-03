@@ -387,7 +387,8 @@ const updateRegistrationStatus = async (req, res) => {
     
     console.log(`📝 Updating registration status: ${id} -> ${status}`);
 
-    const validStatuses = ['Pending', 'Active', 'Completed'];
+    // Match frontend values exactly (lowercase)
+    const validStatuses = ['pending', 'approved', 'rejected', 'under_review'];
     
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -405,23 +406,54 @@ const updateRegistrationStatus = async (req, res) => {
       });
     }
 
-    // Use the instance methods for status updates
+    // Update registration status
     let updatedRegistration;
     
     switch (status) {
       case 'approved':
-        updatedRegistration = await registration.approve(reviewedBy, notes);
+        // If you have approve method
+        if (typeof registration.approve === 'function') {
+          updatedRegistration = await registration.approve(reviewedBy, notes);
+        } else {
+          registration.status = status;
+          registration.reviewedAt = new Date();
+          registration.reviewedBy = reviewedBy || 'Admin';
+          if (notes) registration.notes = notes;
+          updatedRegistration = await registration.save();
+        }
         break;
+        
       case 'rejected':
-        updatedRegistration = await registration.reject(reviewedBy, notes);
+        // If you have reject method
+        if (typeof registration.reject === 'function') {
+          updatedRegistration = await registration.reject(reviewedBy, notes);
+        } else {
+          registration.status = status;
+          registration.reviewedAt = new Date();
+          registration.reviewedBy = reviewedBy || 'Admin';
+          if (notes) registration.notes = notes;
+          updatedRegistration = await registration.save();
+        }
         break;
+        
       case 'under_review':
-        updatedRegistration = await registration.setUnderReview(reviewedBy, notes);
+        // If you have setUnderReview method
+        if (typeof registration.setUnderReview === 'function') {
+          updatedRegistration = await registration.setUnderReview(reviewedBy, notes);
+        } else {
+          registration.status = status;
+          registration.reviewedAt = new Date();
+          registration.reviewedBy = reviewedBy || 'Admin';
+          if (notes) registration.notes = notes;
+          updatedRegistration = await registration.save();
+        }
         break;
+        
       default:
+        // For 'pending' or any other status
         registration.status = status;
         registration.reviewedAt = new Date();
-        registration.reviewedBy = reviewedBy;
+        registration.reviewedBy = reviewedBy || 'Admin';
         if (notes) registration.notes = notes;
         updatedRegistration = await registration.save();
     }
