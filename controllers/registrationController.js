@@ -493,12 +493,15 @@ const updateRegistrationStatus = async (req, res) => {
 // @desc    Update registration details
 // @route   PUT /api/registration/:id
 // @access  Private/Admin
+// @desc    Update registration details
+// @route   PUT /api/registration/:id
+// @access  Private/Admin
 const updateRegistration = async (req, res) => {
   try {
     const { id } = req.params;
     const { firstName, lastName, email, phone, courseName, status } = req.body;
     
-    console.log(`📝 Updating registration: ${id}`);
+    console.log(`📝 Updating registration: ${id}`, req.body);
 
     const registration = await Registration.findById(id);
     
@@ -510,8 +513,11 @@ const updateRegistration = async (req, res) => {
     }
 
     // Check for duplicate email (if changed)
-    if (email && email !== registration.email) {
-      const existingEmail = await Registration.findByEmail(email);
+    if (email && email.toLowerCase().trim() !== registration.email) {
+      const existingEmail = await Registration.findOne({ 
+        email: email.toLowerCase().trim(),
+        _id: { $ne: id }
+      });
       if (existingEmail) {
         return res.status(400).json({
           success: false,
@@ -522,8 +528,11 @@ const updateRegistration = async (req, res) => {
     }
 
     // Check for duplicate phone (if changed)
-    if (phone && phone !== registration.phone) {
-      const existingPhone = await Registration.findByPhone(phone);
+    if (phone && phone.replace(/\D/g, '') !== registration.phone) {
+      const existingPhone = await Registration.findOne({ 
+        phone: phone.replace(/\D/g, ''),
+        _id: { $ne: id }
+      });
       if (existingPhone) {
         return res.status(400).json({
           success: false,
@@ -549,6 +558,7 @@ const updateRegistration = async (req, res) => {
       success: true,
       message: 'Registration updated successfully',
       data: {
+        _id: updatedRegistration._id,
         id: updatedRegistration._id,
         firstName: updatedRegistration.firstName,
         lastName: updatedRegistration.lastName,
@@ -556,7 +566,9 @@ const updateRegistration = async (req, res) => {
         phone: updatedRegistration.phone,
         courseName: updatedRegistration.courseName,
         status: updatedRegistration.status,
-        fullName: updatedRegistration.fullName
+        fullName: updatedRegistration.fullName,
+        createdAt: updatedRegistration.createdAt,
+        submittedAt: updatedRegistration.submittedAt
       }
     });
 
@@ -572,9 +584,14 @@ const updateRegistration = async (req, res) => {
 
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
+      const fieldNames = {
+        email: 'Email address',
+        phone: 'Phone number',
+        aadharNumber: 'Aadhaar number'
+      };
       return res.status(400).json({
         success: false,
-        message: `${field} is already in use`,
+        message: `${fieldNames[field] || field} is already in use`,
         field: field
       });
     }
