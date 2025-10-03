@@ -387,7 +387,7 @@ const updateRegistrationStatus = async (req, res) => {
     
     console.log(`📝 Updating registration status: ${id} -> ${status}`);
 
-    const validStatuses = ['pending', 'approved', 'rejected', 'under_review'];
+    const validStatuses = ['Pending', 'Active', 'Completed'];
     
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
